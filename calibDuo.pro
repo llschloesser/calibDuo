@@ -1,4 +1,6 @@
-#QT += core gui widgets
+#
+# calibDuo.pro
+#
 
 CONFIG += warn_off c++11 console
 

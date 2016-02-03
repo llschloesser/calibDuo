@@ -59,7 +59,7 @@ static void drawLines( cv::Mat& display )
 
   for( int i = 1; i < numLines; ++i )
   {
-    cv::line(	display,
+    cv::line( display,
               cv::Point(    0, i*step ),
               cv::Point( cols, i*step ),
               GREEN );
