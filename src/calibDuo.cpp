@@ -15,8 +15,9 @@ static const cv::Scalar RED  (   0,   0, 255 );
 
 static const std::string WINDOW_NAME = "Duo Calibration";
 
-
+//
 // Gain, Exposure, and LED valid 0-100
+//
 int       EXPOSURE     =  70;
 const int EXPOSURE_MAX = 100;
 int       GAIN         =   0;
@@ -32,13 +33,6 @@ static void callbackLED     ( int, void* ) { SetLED(LED);           }
 
 static void createTrackbars()
 {
-  // Create trackbars and atttch them to a window
-  // 3 parameters are:
-  // - the address of the variable that is changing
-  //   when the trackbar is moved(eg.H_LOW),
-  // - the max value the trackbar can move (eg. H_HIGH), and
-  // - the function that is called whenever the trackbar is
-  //   moved(eg. on_trackbar_callback)
   cv::createTrackbar( "Exposure", WINDOW_NAME,
                       &EXPOSURE, EXPOSURE_MAX, callbackExposure );
   cv::createTrackbar( "Gain", WINDOW_NAME,
@@ -205,11 +199,8 @@ int main()
 
     drawLines( display );
 
-    std::stringstream ss;
-    ss << "Press ESC to terminate";
-
     cv::putText( display,
-                 ss.str(),
+                 "Press ESC to terminate",
                  cv::Point( 10, 30 ),
                  cv::FONT_HERSHEY_SIMPLEX,
                  0.75,

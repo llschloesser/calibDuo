@@ -19,7 +19,7 @@ A stereo calibration utilty for Duo cameras ( [Duo3D.com] (https://duo3d.com) ).
    <img src="https://cloud.githubusercontent.com/assets/10792438/12801389/5d8bc0d6-caaa-11e5-8518-56567a026268.png" width="640" />
    <img src= https://cloud.githubusercontent.com/assets/10792438/12801391/616d9062-caaa-11e5-9553-b205476de881.png width="320" />
  * Press _ESC_ to terminate the program
-10. Retreive the .yml calibration files from cameraFiles/
+10. Retrieve .yml calibration files from cameraFiles/
 
 **Note:** For best results capture ~20+ image sets and ensure these fully cover the cameras' FOVs. Closer is better.
 
