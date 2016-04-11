@@ -43,19 +43,19 @@ static std::string expandEnvironmentVariables( const std::string& input )
   return text;
 }
 
-static const std::string dateTime = now();
+const std::string dateTime = now();
 
-static const std::string intrinsics =
+const std::string intrinsics =
     "cameraFiles/intrinsicsDuoVGA-" + dateTime + ".yml";
 
-static const std::string extrinsics =
+const std::string extrinsics =
     "cameraFiles/extrinsicsDuoVGA-" + dateTime + ".yml";
 
 
-void DuoCalibrator::sampleFrame( const cv::Mat& left,
-                                 const cv::Mat& right,
-                                 std::vector<cv::Point2f>& leftPtsOut,
-                                 std::vector<cv::Point2f>& rightPtsOut )
+void DuoCalibrator::processFrame( const cv::Mat& left,
+                                  const cv::Mat& right,
+                                  std::vector<cv::Point2f>& leftPtsOut,
+                                  std::vector<cv::Point2f>& rightPtsOut )
 {
   leftPtsOut.clear();
   rightPtsOut.clear();
@@ -168,7 +168,9 @@ void DuoCalibrator::calibrate()
   }
 }
 
-// open chessboard images and extract corner points
+//
+// Detect and extract chessboard corners
+//
 void DuoCalibrator::detectChessboardPoints( const cv::Mat& left,
                                             const cv::Mat& right,
                                             std::vector<cv::Point2f>& leftPtsOut,
@@ -250,7 +252,7 @@ void DuoCalibrator::keepMostRecent()
 }
 
 
-const cv::Mat& DuoCalibrator::undistortAndRectifyLeft( const cv::Mat& left )
+const cv::Mat& DuoCalibrator::undistortAndRectifyLeft( const cv::Mat& left ) const
 {
   static cv::Mat newLeft;
   cv::remap( left, newLeft, m_mapL1, m_mapL2, cv::INTER_LINEAR );
@@ -258,7 +260,7 @@ const cv::Mat& DuoCalibrator::undistortAndRectifyLeft( const cv::Mat& left )
 }
 
 
-const cv::Mat& DuoCalibrator::undistortAndRectifyRight( const cv::Mat& right )
+const cv::Mat& DuoCalibrator::undistortAndRectifyRight( const cv::Mat& right ) const
 {
   static cv::Mat newRight;
   cv::remap( right, newRight, m_mapR1, m_mapR2, cv::INTER_LINEAR );
@@ -267,7 +269,7 @@ const cv::Mat& DuoCalibrator::undistortAndRectifyRight( const cv::Mat& right )
 
 
 const cv::Mat& DuoCalibrator::getDisparity( const cv::Mat& left,
-                                            const cv::Mat& right )
+                                            const cv::Mat& right ) const
 {
   static cv::Mat leftQVGA;
   static cv::Mat rightQVGA;

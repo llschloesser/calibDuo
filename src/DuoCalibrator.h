@@ -1,9 +1,9 @@
 #ifndef DUO_CALIBRATOR_H
 #define DUO_CALIBRATOR_H
 
-#include "DuoUtility.h"
-
 #include <opencv2/core.hpp>
+
+#include "DuoUtility.h"
 
 
 const cv::Size QVGA     = cv::Size( WIDTH_QVGA, HEIGHT_QVGA );
@@ -11,21 +11,20 @@ const cv::Size VGA      = cv::Size( WIDTH_VGA,  HEIGHT_VGA  );
 const cv::Size DUO_FULL = cv::Size( WIDTH_FULL, HEIGHT_FULL );
 
 
-
 class DuoCalibrator
 {
 public:
 
   DuoCalibrator( const cv::Size& boardSize )
-    : m_squareLength( 2.533 )
-    , m_boardSize( boardSize )
-    , m_imageSize( VGA )
+    : m_squareLength( 2.533 )  // in cm, but this could be changed to m or mm
+    , m_boardSize( boardSize ) // inner corners (this project's "chessboard" is 9x6)
+    , m_imageSize( VGA )       // default resolution (could go as high as 752x480)
   {}
 
-  void sampleFrame( const cv::Mat& left,
-                    const cv::Mat& right,
-                    std::vector<cv::Point2f>& leftPtsOut,
-                    std::vector<cv::Point2f>& rightPtsOut );
+  void processFrame( const cv::Mat& left,
+                     const cv::Mat& right,
+                     std::vector<cv::Point2f>& leftPtsOut,
+                     std::vector<cv::Point2f>& rightPtsOut );
 
   void keepMostRecent();
 
@@ -33,11 +32,11 @@ public:
 
   void calibrate();
 
-  const cv::Mat& undistortAndRectifyLeft( const cv::Mat& left );
+  const cv::Mat& undistortAndRectifyLeft( const cv::Mat& left ) const;
 
-  const cv::Mat& undistortAndRectifyRight( const cv::Mat& right );
+  const cv::Mat& undistortAndRectifyRight( const cv::Mat& right ) const;
 
-  const cv::Mat& getDisparity( const cv::Mat& left, const cv::Mat& right );
+  const cv::Mat& getDisparity( const cv::Mat& left, const cv::Mat& right ) const;
 
 private:
 
@@ -45,7 +44,9 @@ private:
                                const cv::Mat& right,
                                std::vector<cv::Point2f>& leftPtsOut,
                                std::vector<cv::Point2f>& rightPtsOut );
-
+  //
+  // TODO: Implement this, should give better results
+  //
   //void detectCircleGridPoints( const cv::Mat& left,
   //                             const cv::Mat& right,
   //                             std::vector<cv::Point2f>& leftPtsOut,
@@ -94,6 +95,9 @@ private:
   cv::Mat                               m_P2;
   cv::Mat                               m_Q;
 
+  //
+  // Undistort Maps
+  //
   cv::Mat                               m_mapL1;
   cv::Mat                               m_mapL2;
   cv::Mat                               m_mapR1;

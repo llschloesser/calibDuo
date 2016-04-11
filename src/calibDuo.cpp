@@ -1,19 +1,19 @@
 #include <iostream>
 
+#include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/calib3d.hpp>
 
 #include "DuoCalibrator.h"
 #include "DuoUtility.h"
 
 
-static const cv::Scalar WHITE( 255, 255, 255 );
-static const cv::Scalar BLUE ( 255,   0,   0 );
-static const cv::Scalar GREEN(   0, 255,   0 );
-static const cv::Scalar RED  (   0,   0, 255 );
+const cv::Scalar WHITE( 255, 255, 255 );
+const cv::Scalar BLUE ( 255,   0,   0 );
+const cv::Scalar GREEN(   0, 255,   0 );
+const cv::Scalar RED  (   0,   0, 255 );
 
-static const std::string WINDOW_NAME = "Duo Calibration";
+const std::string WINDOW_NAME = "Duo Calibration";
 
 //
 // Gain, Exposure, and LED valid 0-100
@@ -42,6 +42,11 @@ static void createTrackbars()
 }
 
 
+//
+// After calibration, this function will help visualize the quality of the
+// undistortion and rectification by drawing horizonatl lines across the
+// side-by-side left and right images
+//
 static void drawLines( cv::Mat& display )
 {
   const int rows = display.rows;
@@ -65,14 +70,18 @@ int main()
 {
   printf( "DUOLib Version:       v%s\n", GetLibVersion() );
 
+  //
   // Open DUO camera and start capturing
+  //
   if( !OpenDUOCamera( WIDTH_VGA, HEIGHT_VGA, FPS ) )
   {
     printf( "Could not open DUO camera\n" );
     return 0;
   }
 
-  // Set exposure and gain
+  //
+  // Set initial exposure, gain, and LED power
+  //
   SetExposure( EXPOSURE );
   SetGain( GAIN );
   SetLED( LED );
@@ -99,71 +108,70 @@ int main()
 
   while( isActive )
   {
-    while( true )
+    //
+    // Capture DUO frame
+    //
+    PDUOFrame pFrameData = GetDUOFrame();
+    if( pFrameData == nullptr ) continue;
+
+    //
+    // Set the image data
+    //
+    left.data  = (uint8_t*) pFrameData->leftData;
+    right.data = (uint8_t*) pFrameData->rightData;
+
+    static std::vector<cv::Point2f> leftPts;
+    static std::vector<cv::Point2f> rightPts;
+
+    calibDuo.processFrame( left, right, leftPts, rightPts );
+
+    cv::cvtColor( left,  leftDisplay,  cv::COLOR_GRAY2BGR );
+    cv::cvtColor( right, rightDisplay, cv::COLOR_GRAY2BGR );
+
+    const bool foundL = leftPts.size()  == boardSize.area();
+    const bool foundR = rightPts.size() == boardSize.area();
+
+    cv::drawChessboardCorners( leftDisplay,  boardSize, leftPts,  foundL );
+    cv::drawChessboardCorners( rightDisplay, boardSize, rightPts, foundR );
+
+    std::stringstream ss;
+    ss << "Press any key to capture a frame, ESC to begin calibration";
+
+    cv::putText( display,
+                 ss.str(),
+                 cv::Point( 10, 30 ),
+                 cv::FONT_HERSHEY_SIMPLEX,
+                 0.75,
+                 WHITE );
+
+    ss.str("");
+    ss << "# Image Sets = " << calibDuo.getNumImageSets();
+
+    cv::putText( display,
+                 ss.str(),
+                 cv::Point( 10, 60 ),
+                 cv::FONT_HERSHEY_SIMPLEX,
+                 0.75,
+                 WHITE );
+
+    cv::imshow( WINDOW_NAME, display );
+
+    const int key = cv::waitKey(10);
+
+    if( key >= 0 )
     {
-      //
-      // Capture DUO frame
-      //
-      PDUOFrame pFrameData = GetDUOFrame();
-      if( pFrameData == nullptr ) continue;
-
-      //
-      // Set the image data
-      //
-      left.data  = (uint8_t*) pFrameData->leftData;
-      right.data = (uint8_t*) pFrameData->rightData;
-
-      static std::vector<cv::Point2f> leftPts;
-      static std::vector<cv::Point2f> rightPts;
-
-      calibDuo.sampleFrame( left, right, leftPts, rightPts );
-
-      cv::cvtColor( left,  leftDisplay,  cv::COLOR_GRAY2BGR );
-      cv::cvtColor( right, rightDisplay, cv::COLOR_GRAY2BGR );
-
-      const bool foundL = leftPts.size()  == boardSize.area();
-      const bool foundR = rightPts.size() == boardSize.area();
-
-      cv::drawChessboardCorners( leftDisplay,  boardSize, leftPts,  foundL );
-      cv::drawChessboardCorners( rightDisplay, boardSize, rightPts, foundR );
-
-      std::stringstream ss;
-      ss << "Press any key to capture a frame, ESC to begin calibration";
-
-      cv::putText( display,
-                   ss.str(),
-                   cv::Point( 10, 30 ),
-                   cv::FONT_HERSHEY_SIMPLEX,
-                   0.75,
-                   WHITE );
-
-      ss.str("");
-      ss << "# Image Sets = " << calibDuo.getNumImageSets();
-
-      cv::putText( display,
-                   ss.str(),
-                   cv::Point( 10, 60 ),
-                   cv::FONT_HERSHEY_SIMPLEX,
-                   0.75,
-                   WHITE );
-
-      cv::imshow( WINDOW_NAME, display );
-
-      const int key = cv::waitKey(10);
-
-      if( key >= 0 )
+      if( key == 27 )
       {
-        if( key == 27 )
-        {
-          // Quit the loop with ESC
-          isActive = false;
-        }
-
-        // Any key press is a command to keep a calibration set
-        calibDuo.keepMostRecent();
-
-        break;
+        //
+        // Quit the loop with ESC
+        //
+        isActive = false;
       }
+
+      //
+      // Any key press is a command to keep a calibration pair
+      //
+      calibDuo.keepMostRecent();
     }
   }
 
@@ -171,13 +179,15 @@ int main()
 
   calibDuo.calibrate();
 
-  std::cout << "Stereo-calibration completed.\n";
+  std::cout << "Stereo calibration completed.\n";
 
   const std::string DISP_WINDOW_NAME( "Disparity" );
 
   cv::namedWindow( DISP_WINDOW_NAME, CV_GUI_NORMAL | CV_WINDOW_NORMAL );
 
-  while( true )
+  isActive = true;
+
+  while( isActive )
   {
     //
     // Capture DUO frame
@@ -214,8 +224,10 @@ int main()
 
     if( cv::waitKey( 5 ) == 27 )
     {
+      //
       // Terminate the program with ESC
-      break;
+      //
+      isActive = false;
     }
   }
 
